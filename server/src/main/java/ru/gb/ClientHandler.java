@@ -89,11 +89,19 @@ public class ClientHandler {
         try {
             while (true) {
                 final String strFromClient = in.readUTF();
-                if ("/end".equals(strFromClient)) {
-                    return;
+                if (strFromClient.startsWith("/")) {
+                    if (strFromClient.equals("/end")) {
+                        break;
+                    }
+                    if (strFromClient.startsWith("/w ")) {
+                        String[] tokens = strFromClient.split("\\s");
+                        String nick = tokens[1];
+                        String msg = strFromClient.substring(4 + nick.length());
+                        server.sendMsgToClient(this, nick, msg);
+                    }
+                    continue;
                 }
-                System.out.println("SERVER: Получено сообщение от " + name + ": " + strFromClient);
-                sendMessage(name + ": " + strFromClient);
+                server.broadcast(name + ": " + strFromClient);
             }
         } catch (IOException e) {
             e.printStackTrace();

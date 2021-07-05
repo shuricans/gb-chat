@@ -28,6 +28,14 @@ public class ChatServer {
         }
     }
 
+    public void broadcastClientList() {
+        StringBuilder sb = new StringBuilder("/clients ");
+        for (ClientHandler client : clients) {
+            sb.append(client.getName() + " ");
+        }
+        broadcast(sb.toString());
+    }
+
     public void broadcast(String msg) {
         for (ClientHandler client : clients) {
             client.sendMessage(msg);
@@ -37,11 +45,13 @@ public class ChatServer {
     public void subscribe(ClientHandler clientHandler) {
         System.out.println("SERVER: Client " + clientHandler.getName() + " login...");
         clients.add(clientHandler);
+        broadcastClientList();
     }
 
     public void unsubscribe(ClientHandler clientHandler) {
         System.out.println("SERVER: Client " + clientHandler.getName() + " logout...");
         clients.remove(clientHandler);
+        broadcastClientList();
     }
 
     public AuthService getAuthService() {
@@ -55,5 +65,16 @@ public class ChatServer {
             }
         }
         return false;
+    }
+
+    public void sendMsgToClient(ClientHandler from, String nickTo, String msg) {
+        for (ClientHandler o : clients) {
+            if (o.getName().equals(nickTo)) {
+                o.sendMessage("от " + from.getName() + ": " + msg);
+                from.sendMessage("клиенту " + nickTo + ": " + msg);
+                return;
+            }
+        }
+        from.sendMessage("Участника с ником " + nickTo + " нет в чат-комнате");
     }
 }
