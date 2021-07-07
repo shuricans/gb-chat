@@ -31,7 +31,7 @@ public class ChatServer {
     public void broadcastClientList() {
         StringBuilder sb = new StringBuilder("/clients ");
         for (ClientHandler client : clients) {
-            sb.append(client.getName() + " ");
+            sb.append(client.getName()).append(" ");
         }
         broadcast(sb.toString());
     }
