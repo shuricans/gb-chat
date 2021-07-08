@@ -117,7 +117,6 @@ public class Controller implements Initializable {
             }
 
             if (socket == null || socket.isClosed()) {
-                ;
                 return;
             }
 
