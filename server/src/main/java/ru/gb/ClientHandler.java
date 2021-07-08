@@ -91,6 +91,7 @@ public class ClientHandler {
                 final String strFromClient = in.readUTF();
                 if (strFromClient.startsWith("/")) {
                     if (strFromClient.equals("/end")) {
+                        sendMessage(strFromClient);
                         break;
                     }
                     if (strFromClient.startsWith("/w ")) {

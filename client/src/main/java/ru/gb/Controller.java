@@ -49,6 +49,7 @@ public class Controller implements Initializable {
     private HBox authPanel;
 
     private final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
+    private boolean isConnected = false;
 
     private void auth() {
 
@@ -71,7 +72,6 @@ public class Controller implements Initializable {
             while (!messageQueue.isEmpty()) {
                 try {
                     String msgFromServer = messageQueue.take();
-                    System.err.println("msgFromServer: " + msgFromServer);
                     if (msgFromServer.startsWith(nick)) {
                         msgFromServer = "[You] " + msgFromServer;
                     }
@@ -92,7 +92,8 @@ public class Controller implements Initializable {
         readService.valueProperty().addListener(countReadListener);
 
         readService.setOnSucceeded(workerStateEvent -> {
-            System.out.println("GETTOTHECHOPPA!");
+            System.out.println("LOGOUT EVENT BY \"/END\" COMMAND...");
+            isConnected = false;
             nick = "";
             setAuth(false);
             try {
@@ -107,71 +108,35 @@ public class Controller implements Initializable {
         readService.start();
     }
 
+    public void windowCloseEvent() {
+        System.out.println("GETTOTHECHOPPA!");
+        try {
+
+            if (!isConnected) {
+                return;
+            }
+
+            if (socket == null || socket.isClosed()) {
+                ;
+                return;
+            }
+
+            out.writeUTF("/end");
+            in.close();
+            out.close();
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void connect() {
         try {
             this.socket = new Socket("localhost", 8189);
             this.in = new DataInputStream(socket.getInputStream());
             this.out = new DataOutputStream(socket.getOutputStream());
+            isConnected = true;
             setAuth(false);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void connectLegacy() {
-        try {
-            this.socket = new Socket("localhost", 8189);
-            this.in = new DataInputStream(socket.getInputStream());
-            this.out = new DataOutputStream(socket.getOutputStream());
-            setAuth(false);
-
-            new Thread(() -> {
-                try {
-                    while (true) { // Ждем сообщения об успешной авторизации ("/authok")
-                        final String msgAuth = in.readUTF();
-                        System.out.println("CLIENT: Received message: " + msgAuth);
-                        if (msgAuth.startsWith("/authok")) {
-                            setAuth(true);
-                            nick = msgAuth.split("\\s")[1];
-                            textArea.appendText("Успешная авторизация под ником " + nick + "\n");
-                            break;
-                        }
-                        textArea.appendText(msgAuth + "\n");
-                    }
-                    while (true) { // После успешной авторизации можно обрабатывать все сообщения
-                        String msgFromServer = in.readUTF();
-                        System.out.println("CLIENT: Received message: " + msgFromServer);
-                        if (msgFromServer.startsWith(nick)) {
-                            msgFromServer = "[You] " + msgFromServer;
-                        }
-                        if ("/end".equalsIgnoreCase(msgFromServer)) {
-                            break;
-                        }
-                        if (msgFromServer.startsWith("/clients")) {
-                            final List<String> clients = new ArrayList<>(Arrays.asList(msgFromServer.split("\\s")));
-                            clients.remove(0);
-                            clientList.getItems().clear();
-                            clientList.getItems().addAll(clients);
-                            continue;
-                        }
-                        textArea.appendText(msgFromServer + "\n");
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                } finally {
-                    try {
-                        setAuth(false);
-                        socket.close();
-                        nick = "";
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                }
-            }).start();
-
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -190,10 +155,10 @@ public class Controller implements Initializable {
     }
 
     public void sendAuth(ActionEvent actionEvent) {
-//        if (socket == null || socket.isClosed()) {
-////            connect();
-//            auth();
-//        }
+        if (socket == null || socket.isClosed()) {
+            connect();
+            auth();
+        }
 
         try {
             System.out.println("CLIENT: Send auth message");
@@ -207,7 +172,12 @@ public class Controller implements Initializable {
 
     public void sendMsg(ActionEvent actionEvent) {
         try {
-            final String msg = textField.getText();
+            final String msg = textField.getText().trim();
+
+            if (msg.isEmpty()) {
+                return;
+            }
+
             System.out.println("CLIENT: Send message to server: " + msg);
             out.writeUTF(msg);
             textField.clear();
@@ -219,8 +189,8 @@ public class Controller implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        connect();
-        auth();
+//        connect();
+//        auth();
     }
 
     public void selectClient(MouseEvent mouseEvent) {
