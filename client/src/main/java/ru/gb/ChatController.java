@@ -6,14 +6,12 @@ import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
+import javafx.scene.control.ListView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.HBox;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,50 +20,21 @@ import java.util.ResourceBundle;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Controller implements Initializable {
+import static ru.gb.Main.*;
 
-    private Socket socket;
-    private DataInputStream in;
-    private DataOutputStream out;
-    private String nick;
+public class ChatController implements Initializable {
 
-    @FXML
-    private HBox clientPanel;
-    @FXML
-    private HBox msgPanel;
     @FXML
     private TextField textField;
-    @FXML
-    private Button btnSend;
     @FXML
     private ListView<String> clientList;
     @FXML
     private TextArea textArea;
-    @FXML
-    private PasswordField passwordField;
-    @FXML
-    private TextField loginField;
-    @FXML
-    private HBox authPanel;
 
     private final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
-    private boolean isConnected = false;
 
-    private void auth() {
 
-        AuthService authService = new AuthService();
-
-        authService.setOnSucceeded(workerStateEvent -> {
-            textArea.appendText(workerStateEvent.getSource().getMessage());
-            setAuth(true);
-            startRead();
-        });
-
-        authService.start();
-    }
-
-    private void startRead() {
-
+    protected void startRead() {
         ReadService readService = new ReadService();
 
         ChangeListener<Long> countReadListener = (observableValue, prev, current) -> {
@@ -95,11 +64,11 @@ public class Controller implements Initializable {
             System.out.println("LOGOUT EVENT BY \"/END\" COMMAND...");
             isConnected = false;
             nick = "";
-            setAuth(false);
             try {
                 in.close();
                 out.close();
                 socket.close();
+                screenController.activate("login");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -129,46 +98,6 @@ public class Controller implements Initializable {
         }
     }
 
-    private void connect() {
-        try {
-            this.socket = new Socket("localhost", 8189);
-            this.in = new DataInputStream(socket.getInputStream());
-            this.out = new DataOutputStream(socket.getOutputStream());
-            isConnected = true;
-            setAuth(false);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void setAuth(boolean isAuthSuccess) {
-        authPanel.setVisible(!isAuthSuccess);
-        authPanel.setManaged(!isAuthSuccess);
-
-        msgPanel.setVisible(isAuthSuccess);
-        msgPanel.setManaged(isAuthSuccess);
-
-        clientPanel.setVisible(isAuthSuccess);
-        clientPanel.setManaged(isAuthSuccess);
-    }
-
-    public void sendAuth(ActionEvent actionEvent) {
-        if (socket == null || socket.isClosed()) {
-            connect();
-            auth();
-        }
-
-        try {
-            System.out.println("CLIENT: Send auth message");
-            out.writeUTF("/auth " + loginField.getText() + " " + passwordField.getText());
-            loginField.clear();
-            passwordField.clear();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void sendMsg(ActionEvent actionEvent) {
         try {
             final String msg = textField.getText().trim();
@@ -188,8 +117,7 @@ public class Controller implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-//        connect();
-//        auth();
+
     }
 
     public void selectClient(MouseEvent mouseEvent) {
@@ -202,27 +130,6 @@ public class Controller implements Initializable {
         }
     }
 
-    private class AuthService extends Service<Void> {
-
-        @Override
-        protected Task<Void> createTask() {
-            return new Task<>() {
-                @Override
-                protected Void call() throws Exception {
-                    while (true) {
-                        final String msgAuth = in.readUTF();
-                        System.out.println("CLIENT: Received message: " + msgAuth);
-                        if (msgAuth.startsWith("/authok")) {
-                            nick = msgAuth.split("\\s")[1];
-                            updateMessage("Успешная авторизация под ником " + nick + "\n");
-                            break;
-                        }
-                    }
-                    return null;
-                }
-            };
-        }
-    }
 
     private class ReadService extends Service<Long> {
         private Long counter = 0L;
