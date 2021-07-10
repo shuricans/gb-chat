@@ -11,6 +11,8 @@ public class ClientHandler {
     private final DataInputStream in;
     private final DataOutputStream out;
 
+    private boolean timeoutAuth = false;
+
     private String name;
 
     public ClientHandler(Socket socket, ChatServer server) {
@@ -37,6 +39,12 @@ public class ClientHandler {
         while (true) {
             try {
                 final String str = in.readUTF();
+
+                if ("/end".equalsIgnoreCase(str)) {
+                    timeoutAuth = true;
+                    break;
+                }
+
                 if (str.startsWith("/auth")) { // /auth login1 pass1
                     final String[] split = str.split("\\s");
                     final String login = split[1];
@@ -86,6 +94,10 @@ public class ClientHandler {
     }
 
     public void readMessages() {
+        if (timeoutAuth) {
+            return;
+        }
+
         try {
             while (true) {
                 final String strFromClient = in.readUTF();

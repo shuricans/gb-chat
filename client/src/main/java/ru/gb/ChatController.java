@@ -62,40 +62,19 @@ public class ChatController implements Initializable {
 
         readService.setOnSucceeded(workerStateEvent -> {
             System.out.println("LOGOUT EVENT BY \"/END\" COMMAND...");
-            isConnected = false;
             nick = "";
             try {
                 in.close();
                 out.close();
                 socket.close();
                 screenController.activate("login");
+                loginController.resetTimer(new ActionEvent());
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
 
         readService.start();
-    }
-
-    public void windowCloseEvent() {
-        System.out.println("GETTOTHECHOPPA!");
-        try {
-
-            if (!isConnected) {
-                return;
-            }
-
-            if (socket == null || socket.isClosed()) {
-                return;
-            }
-
-            out.writeUTF("/end");
-            in.close();
-            out.close();
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public void sendMsg(ActionEvent actionEvent) {

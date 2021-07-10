@@ -1,21 +1,24 @@
 package ru.gb;
 
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.fxml.Initializable;
+import javafx.scene.control.*;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.URL;
+import java.util.ResourceBundle;
 
 import static ru.gb.Main.*;
 
-public class LoginController {
+public class LoginController implements Initializable {
 
     @FXML
     private PasswordField passwordField;
@@ -23,6 +26,18 @@ public class LoginController {
     private TextField loginField;
     @FXML
     private Label infoLabel;
+    @FXML
+    private Label timerLabelPrev;
+    @FXML
+    private Label timerLabel;
+    @FXML
+    private Label timerLabelNext;
+    @FXML
+    private Hyperlink resetLink;
+    @FXML
+    private Button authButton;
+
+    private Timer timer;
 
     public void sendAuth(ActionEvent actionEvent) {
 
@@ -49,10 +64,15 @@ public class LoginController {
         AuthService authService = new AuthService();
 
         authService.setOnSucceeded(workerStateEvent -> {
+            timer.cancel();
             chatController.startRead();
             screenController.activate("chat");
+            infoLabel.textProperty().unbind();
+            infoLabel.setText("");
+            infoLabel.setVisible(false);
         });
 
+        infoLabel.setVisible(true);
         infoLabel.textProperty().bind(authService.messageProperty());
 
         authService.start();
@@ -63,11 +83,56 @@ public class LoginController {
             socket = new Socket("localhost", 8189);
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
-            isConnected = true;
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    private void startTimer() {
+        timer = new Timer(20);
+
+        timer.setOnSucceeded(workerStateEvent -> {
+            System.out.println("timeout");
+            try {
+                out.writeUTF("/end");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            passwordField.setDisable(true);
+            loginField.setDisable(true);
+            authButton.setDisable(true);
+            timerLabelPrev.setText("");
+            timerLabel.textProperty().unbind();
+            timerLabel.setText("");
+            timerLabelNext.setText("");
+            timerLabel.setText("Время вышло... ");
+            resetLink.setVisible(true);
+        });
+
+        timerLabel.textProperty().bind(timer.valueProperty().asString());
+
+        timer.start();
+    }
+
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        connect();
+        auth();
+        startTimer();
+    }
+
+    public void resetTimer(ActionEvent actionEvent) {
+        passwordField.setDisable(false);
+        loginField.setDisable(false);
+        authButton.setDisable(false);
+        timerLabelPrev.setText("Осталось ");
+        timerLabelNext.setText(" c");
+        resetLink.setVisible(false);
+        resetLink.setVisited(false);
+        connect();
+        auth();
+        startTimer();
     }
 
     private static class AuthService extends Service<Void> {
@@ -91,6 +156,32 @@ public class LoginController {
                         updateMessage(msgAuth);
                     }
                     return null;
+                }
+            };
+        }
+    }
+
+    private static class Timer extends Service<Integer> {
+
+        private Integer timer;
+
+        public Timer(int time) {
+            this.timer = time;
+        }
+
+        @Override
+        protected Task<Integer> createTask() {
+            return new Task<>() {
+                @Override
+                protected Integer call() throws Exception {
+                    while (timer > 0) {
+                        if(isCancelled()) {
+                            break;
+                        }
+                        updateValue(timer--);
+                        Thread.sleep(1000);
+                    }
+                    return timer;
                 }
             };
         }
