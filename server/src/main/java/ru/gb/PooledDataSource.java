@@ -14,7 +14,7 @@ public class PooledDataSource {
         BD_SRC = new BasicDataSource();
         BD_SRC.setDriverClassName(getPropertyValue("driverClass"));
         BD_SRC.setUrl(getPropertyValue("url"));
-        BD_SRC.setUsername(getPropertyValue("user"));
+        BD_SRC.setUsername(getPropertyValue("username"));
         BD_SRC.setPassword(getPropertyValue("password"));
 
         // Parameters for connection pooling
