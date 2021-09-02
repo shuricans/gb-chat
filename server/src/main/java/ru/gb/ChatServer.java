@@ -14,7 +14,7 @@ public class ChatServer {
 
     public ChatServer() {
         clients = new ArrayList<>();
-        authService = new SimpleAuthService();
+        authService = new DBSimpleAuthService();
 
         try (ServerSocket serverSocket = new ServerSocket(8189)) {
             System.out.println("SERVER: Server start...");
