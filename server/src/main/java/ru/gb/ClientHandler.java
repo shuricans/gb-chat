@@ -106,6 +106,16 @@ public class ClientHandler {
                         sendMessage(strFromClient);
                         break;
                     }
+                    if (strFromClient.startsWith("/changeNick")) {
+                        String[] tokens = strFromClient.split("\\s");
+                        if(tokens.length > 1) {
+                            String newNickname = tokens[1];
+                            server.changeNickname(this, newNickname);
+                        } else {
+                            sendMessage("Wrong request! \"" + strFromClient + "\"");
+                            sendMessage("Correct example: \"/changeNick newAwesomeUniqueNick\"");
+                        }
+                    }
                     if (strFromClient.startsWith("/w ")) {
                         String[] tokens = strFromClient.split("\\s");
                         String nick = tokens[1];
@@ -124,5 +134,9 @@ public class ClientHandler {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

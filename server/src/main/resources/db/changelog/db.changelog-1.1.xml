@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+            http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2" author="shuricans">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM usr;
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="usr">
+            <column name="login" value="login0"/>
+            <column name="password" value="pass0"/>
+            <column name="nickname" value="nick0"/>
+        </insert>
+
+        <insert tableName="usr">
+            <column name="login" value="login1"/>
+            <column name="password" value="pass1"/>
+            <column name="nickname" value="nick1"/>
+        </insert>
+
+        <insert tableName="usr">
+            <column name="login" value="login2"/>
+            <column name="password" value="pass2"/>
+            <column name="nickname" value="nick2"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
