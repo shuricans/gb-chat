@@ -1,13 +1,14 @@
 package ru.gb;
 
-import javax.sql.DataSource;
+import ru.gb.dao.UserDao;
+import ru.gb.dao.UserDaoImpl;
+import ru.gb.model.User;
+import ru.gb.service.AuthService;
+import ru.gb.service.DBSimpleAuthService;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,9 +18,12 @@ public class ChatServer {
 
     private final List<ClientHandler> clients;
 
+    private final UserDao userDao;
+
     public ChatServer() {
         clients = new ArrayList<>();
         authService = new DBSimpleAuthService();
+        userDao = new UserDaoImpl();
 
         try (ServerSocket serverSocket = new ServerSocket(8189)) {
             System.out.println("SERVER: Server start...");
@@ -65,7 +69,7 @@ public class ChatServer {
 
     public boolean isNicknameBusy(String nickname) {
         for (ClientHandler client : clients) {
-            if(client.getName().equals(nickname)) {
+            if (client.getName().equals(nickname)) {
                 return true;
             }
         }
@@ -85,49 +89,20 @@ public class ChatServer {
 
     public void changeNickname(ClientHandler clientHandler, String newNickname) {
 
-        final String checkNicknameSQL = "SELECT id FROM usr WHERE nickname = ?";
-        final String updateNicknameSQL = "UPDATE usr SET nickname = ? WHERE nickname = ?";
-
-        Connection connection = null;
-        PreparedStatement prepareStatement = null;
-
-        try {
-            final DataSource ds = PooledDataSource.getDataSource();
-            connection = ds.getConnection();
-            prepareStatement = connection.prepareStatement(checkNicknameSQL);
-
-            prepareStatement.setString(1, newNickname);
-            ResultSet resultSet = prepareStatement.executeQuery();
-            if (resultSet.next()) {
-                clientHandler.sendMessage(String.format("SERVER: nickname [%s] is busy.", newNickname));
-            } else {
-                prepareStatement = connection.prepareStatement(updateNicknameSQL);
-                prepareStatement.setString(1, newNickname);
-                prepareStatement.setString(2, clientHandler.getName());
-                prepareStatement.executeUpdate();
+        User userWithSameNickname = userDao.findByNickname(newNickname).orElse(null);
+        if (userWithSameNickname != null) {
+            clientHandler.sendMessage(String.format("SERVER: nickname [%s] is busy.", newNickname));
+        } else {
+            User user = userDao.findByNickname(clientHandler.getName()).orElse(null);
+            if(user != null) {
+                user.setNickname(newNickname);
+                userDao.update(user);
                 broadcast(String.format(
                         "SERVER: [%s] changed his nickname to [%s]",
                         clientHandler.getName(), newNickname)
                 );
                 clientHandler.setName(newNickname);
                 broadcastClientList();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            if (prepareStatement != null) {
-                try {
-                    prepareStatement.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
             }
         }
     }
