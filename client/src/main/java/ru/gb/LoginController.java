@@ -6,12 +6,15 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import ru.gb.logger.MsgLoggerImpl;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ResourceBundle;
 
 import static ru.gb.Main.*;
@@ -58,11 +61,21 @@ public class LoginController implements Initializable {
         }
     }
 
+    private Path getFilePath() {
+        StringBuilder builderPath = new StringBuilder(System.getProperty("user.home"));
+        builderPath.append("\\history_");
+        builderPath.append(nick);
+        builderPath.append(".txt");
+        return Paths.get(builderPath.toString());
+    }
+
     private void auth() {
         AuthService authService = new AuthService();
 
         authService.setOnSucceeded(workerStateEvent -> {
             timer.cancel();
+            logger = new MsgLoggerImpl(getFilePath());
+            chatController.loadHistory(100);
             chatController.startRead();
             screenController.activate("chat");
             infoLabel.textProperty().unbind();

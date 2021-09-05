@@ -10,6 +10,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
+import ru.gb.logger.MsgLoggerImpl;
 
 import java.io.IOException;
 import java.net.URL;
@@ -34,6 +35,15 @@ public class ChatController implements Initializable {
     private final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
 
 
+    protected void loadHistory(int countRows) {
+        textArea.clear();
+        List<String> lastRows = logger.getLastRows(countRows);
+        if (lastRows != null && !lastRows.isEmpty()) {
+            lastRows.forEach(msg -> textArea.appendText(msg + MsgLoggerImpl.NEW_LINE));
+        }
+    }
+
+
     protected void startRead() {
         ReadService readService = new ReadService();
 
@@ -52,6 +62,7 @@ public class ChatController implements Initializable {
                         return;
                     }
                     textArea.appendText(msgFromServer + "\n");
+                    logger.write(msgFromServer);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

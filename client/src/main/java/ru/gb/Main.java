@@ -6,6 +6,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import ru.gb.logger.MsgLogger;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -22,6 +23,8 @@ public class Main extends Application {
     static ChatController chatController;
     static LoginController loginController;
     static ScreenController screenController;
+
+    protected static MsgLogger logger;
 
     public static void main(String[] args) {
         launch(args);
@@ -40,7 +43,6 @@ public class Main extends Application {
         loader = new FXMLLoader(getClass().getResource("/chat.fxml"));
         screenController.add("chat", loader.load());
         chatController = loader.getController();
-
 
         stage.setTitle("Чат клиент");
         stage.setScene(scene);
