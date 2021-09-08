@@ -37,7 +37,7 @@ public class ChatServer {
         }
     }
 
-    public void broadcastClientList() {
+    public synchronized void broadcastClientList() {
         StringBuilder sb = new StringBuilder("/clients ");
         for (ClientHandler client : clients) {
             sb.append(client.getName()).append(" ");
@@ -45,19 +45,19 @@ public class ChatServer {
         broadcast(sb.toString());
     }
 
-    public void broadcast(String msg) {
+    public synchronized void broadcast(String msg) {
         for (ClientHandler client : clients) {
             client.sendMessage(msg);
         }
     }
 
-    public void subscribe(ClientHandler clientHandler) {
+    public synchronized void subscribe(ClientHandler clientHandler) {
         System.out.println("SERVER: Client " + clientHandler.getName() + " login...");
         clients.add(clientHandler);
         broadcastClientList();
     }
 
-    public void unsubscribe(ClientHandler clientHandler) {
+    public synchronized void unsubscribe(ClientHandler clientHandler) {
         System.out.println("SERVER: Client " + clientHandler.getName() + " logout...");
         clients.remove(clientHandler);
         broadcastClientList();
@@ -67,7 +67,7 @@ public class ChatServer {
         return authService;
     }
 
-    public boolean isNicknameBusy(String nickname) {
+    public synchronized boolean isNicknameBusy(String nickname) {
         for (ClientHandler client : clients) {
             if (client.getName().equals(nickname)) {
                 return true;
@@ -76,7 +76,7 @@ public class ChatServer {
         return false;
     }
 
-    public void sendMsgToClient(ClientHandler from, String nickTo, String msg) {
+    public synchronized void sendMsgToClient(ClientHandler from, String nickTo, String msg) {
         for (ClientHandler o : clients) {
             if (o.getName().equals(nickTo)) {
                 o.sendMessage("от " + from.getName() + ": " + msg);
@@ -87,7 +87,7 @@ public class ChatServer {
         from.sendMessage("Участника с ником " + nickTo + " нет в чат-комнате");
     }
 
-    public void changeNickname(ClientHandler clientHandler, String newNickname) {
+    public synchronized void changeNickname(ClientHandler clientHandler, String newNickname) {
 
         User userWithSameNickname = userDao.findByNickname(newNickname).orElse(null);
         if (userWithSameNickname != null) {
