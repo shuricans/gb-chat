@@ -63,9 +63,10 @@ public class LoginController implements Initializable {
 
     private Path getFilePath() {
         StringBuilder builderPath = new StringBuilder(System.getProperty("user.home"));
-        builderPath.append("\\history_");
-        builderPath.append(nick);
-        builderPath.append(".txt");
+        builderPath.append(System.getProperty("file.separator"))
+        .append("history_")
+        .append(nick)
+        .append(".txt");
         return Paths.get(builderPath.toString());
     }
 
