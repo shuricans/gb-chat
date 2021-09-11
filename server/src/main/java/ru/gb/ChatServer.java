@@ -11,6 +11,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static ru.gb.ConfigProperties.getPropertyValue;
 
 public class ChatServer {
 
@@ -24,16 +28,20 @@ public class ChatServer {
         clients = new ArrayList<>();
         authService = new DBSimpleAuthService();
         userDao = new UserDaoImpl();
+        final int nThreads = Integer.parseInt(getPropertyValue("nThreads"));
+        final ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
 
         try (ServerSocket serverSocket = new ServerSocket(8189)) {
             System.out.println("SERVER: Server start...");
             while (true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("SERVER: Client connected...");
-                new ClientHandler(socket, this);
+                executorService.submit(new ClientHandler(socket, this));
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            executorService.shutdownNow();
         }
     }
 

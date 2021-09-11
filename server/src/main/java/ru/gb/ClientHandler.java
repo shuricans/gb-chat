@@ -5,7 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
-public class ClientHandler {
+public class ClientHandler implements Runnable {
     private final Socket socket;
     private final ChatServer server;
     private final DataInputStream in;
@@ -22,14 +22,6 @@ public class ClientHandler {
             this.server = server;
             this.in = new DataInputStream(socket.getInputStream());
             this.out = new DataOutputStream(socket.getOutputStream());
-            new Thread(() -> {
-                try {
-                    authenticate();
-                    readMessages();
-                } finally {
-                    closeConnection();
-                }
-            }).start();
         } catch (IOException e) {
             throw new RuntimeException("Не могу создать обработчик для клиента", e);
         }
@@ -138,5 +130,15 @@ public class ClientHandler {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    @Override
+    public void run() {
+        try {
+            authenticate();
+            readMessages();
+        } finally {
+            closeConnection();
+        }
     }
 }
