@@ -1,5 +1,7 @@
 package ru.gb;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.gb.dao.UserDao;
 import ru.gb.dao.UserDaoImpl;
 import ru.gb.model.User;
@@ -18,6 +20,8 @@ import static ru.gb.ConfigProperties.getPropertyValue;
 
 public class ChatServer {
 
+    private static final Logger LOGGER = LogManager.getLogger(ChatServer.class);
+
     private final AuthService authService;
 
     private final List<ClientHandler> clients;
@@ -32,14 +36,15 @@ public class ChatServer {
         final ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
 
         try (ServerSocket serverSocket = new ServerSocket(8189)) {
-            System.out.println("SERVER: Server start...");
+            LOGGER.info("Started");
             while (true) {
+                LOGGER.info("Waiting client connect");
                 Socket socket = serverSocket.accept();
-                System.out.println("SERVER: Client connected...");
+                LOGGER.info("Anonymous client just connected");
                 executorService.submit(new ClientHandler(socket, this));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
         } finally {
             executorService.shutdownNow();
         }
@@ -60,13 +65,13 @@ public class ChatServer {
     }
 
     public synchronized void subscribe(ClientHandler clientHandler) {
-        System.out.println("SERVER: Client " + clientHandler.getName() + " login...");
+        LOGGER.info("Client " + clientHandler.getName() + " login");
         clients.add(clientHandler);
         broadcastClientList();
     }
 
     public synchronized void unsubscribe(ClientHandler clientHandler) {
-        System.out.println("SERVER: Client " + clientHandler.getName() + " logout...");
+        LOGGER.info("Client " + clientHandler.getName() + " logout");
         clients.remove(clientHandler);
         broadcastClientList();
     }
