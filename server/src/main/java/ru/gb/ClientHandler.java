@@ -1,11 +1,17 @@
 package ru.gb;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
 public class ClientHandler implements Runnable {
+
+    private static final Logger LOGGER = LogManager.getLogger(ClientHandler.class);
+
     private final Socket socket;
     private final ChatServer server;
     private final DataInputStream in;
@@ -17,12 +23,13 @@ public class ClientHandler implements Runnable {
 
     public ClientHandler(Socket socket, ChatServer server) {
         try {
-            this.name = "";
+            this.name = "anonymous";
             this.socket = socket;
             this.server = server;
             this.in = new DataInputStream(socket.getInputStream());
             this.out = new DataOutputStream(socket.getOutputStream());
         } catch (IOException e) {
+            LOGGER.error("Не могу создать обработчик для клиента", e);
             throw new RuntimeException("Не могу создать обработчик для клиента", e);
         }
     }
@@ -70,17 +77,17 @@ public class ClientHandler implements Runnable {
             out.close();
             socket.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }
 
     public void sendMessage(String msg) {
         try {
-            System.out.println("SERVER: Send message to " + name + ": " + msg);
+            LOGGER.info("Send message to " + name + ": " + msg);
             out.writeUTF(msg);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }
